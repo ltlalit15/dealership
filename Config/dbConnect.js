@@ -23,16 +23,16 @@
 //   }
 // })();
 
-
+//live db
 import { JSONCookie } from 'cookie-parser';
 import { query } from 'express';
 import mysql from 'mysql2/promise';
 export const pool = mysql.createPool({
-  host: "localhost",     // 👈 Localhost for local MySQL
-  port: 3306,            // 👈 Default MySQL port
-  user: "root",          // 👈 Your local MySQL username
-  password: "",          // 👈 Or your local MySQL password
-  database: "dealership",                // Database Name
+  host: "shinkansen.proxy.rlwy.net",    // ✅ Railway host
+  port: 58417,                           // ✅ Railway port
+  user: "root",                          // ✅ Railway username
+  password: "vPQMiXLOcsfhbPiZneJgbImgreEJDifE",  // ✅ Railway password
+  database: "railway",                  // ✅ Database name
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
