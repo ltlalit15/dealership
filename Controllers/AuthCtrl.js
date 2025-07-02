@@ -43,8 +43,8 @@ export const login = async (req, res) => {
 };
 
 // SIGNUP
-export const signUp = async (req, res) => {
-  const { email, password, name, role, phone } = req.body;
+export const CreateUser = async (req, res) => {
+  const { email, password, name, role, phone, dealership_id, status  } = req.body;
   try {
     const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
@@ -52,19 +52,66 @@ export const signUp = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await pool.query('INSERT INTO users (email, password, name, role, phone) VALUES (?, ?, ?, ?, ?)', [
+    const [result] = await pool.query('INSERT INTO users (email, password, name, role, phone,  dealership_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
       email,
       hashedPassword,
       name,
       role,
       phone,
+      dealership_id || null, // or set default null
+      status || 1, // set default active (1)
     ]);
 
-    res.status(201).json({ msg: 'User created successfully' });
+    res.status(201).json({ msg: 'User created successfully',
+      data:result[0]
+     });
   } catch (error) {
     res.status(500).json({ msg: 'Error during signup', error });
   }
 };
+
+export const updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { email, name, role, phone, dealership_id, status } = req.body;
+  try {
+    const [existing] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    await pool.query('UPDATE users SET email = ?, name = ?, role = ?, phone = ?, dealership_id = ?, status = ? WHERE id = ?', [
+      email,
+      name,
+      role,
+      phone,
+      dealership_id || null,
+      status || 1,
+      id
+    ]);
+
+    res.status(200).json({ msg: 'User updated successfully' });
+  } catch (error) {
+    res.status(500).json({ msg: 'Error updating user', error });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [existing] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ msg: 'User not found' });
+    }
+
+    await pool.query('DELETE FROM users WHERE id = ?', [id]);
+
+    res.status(200).json({ msg: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ msg: 'Error deleting user', error });
+  }
+};
+
+
 
 export const logout = async (req, res) => {
   try {
@@ -86,13 +133,19 @@ export const logout = async (req, res) => {
 
 // GET ALL USERS 
 export const getAllUsers = async (req, res) => {
-  try {
-    const [users] = await pool.query('SELECT id, email, name, role, phone FROM users');
+  try { 	
+
+    const [users] = await pool.query(`SELECT u.id, u.email, u.name, u.role, u.phone, u.created_at, u.dealership_id, d.name AS dealership_name, u.status
+      FROM users u
+      LEFT JOIN dealership d ON u.dealership_id = d.id
+    `);
     res.json(users);
   } catch (error) {
     res.status(500).json({ msg: 'Error fetching users', error });
   }
 };
+
+
 
 // GET USER BY ID 
 export const getUserById = async (req, res) => {
@@ -105,3 +158,25 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ msg: 'Error fetching user', error });
   }
 };
+
+export const assigndelership = async (req, res) => {
+  const { id } = req.params
+  const { dealership_id } = req.body;
+  try {
+    const [result] = await pool.query("UPDATE users SET dealership_id = ? WHERE id = ? ", [dealership_id, id]);
+    if (result.affectedRows == 0) {
+      return res.status(400).json({ message: "users not found" });
+    }
+    res.status(200).json({
+      message: "Dealership assigned successfully",
+      userId: id,
+      dealershipId: dealership_id
+    })
+  }
+  catch (error) {
+    console.error(error);
+    return res.status(500).json({message: "Internal sever error"})
+
+  }
+}
+
