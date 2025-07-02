@@ -21,6 +21,60 @@ export const addDealership = async (req, res) => {
 };
 
 
+
+export const arun = async (req, res) => {
+    try {
+        const { id, name, code } = req.body;
+        const arunvariable = `INSERT INTO  dealership (id, name, code) VALUES (?, ?, ?)`;
+        const [result] = await pool.query(arunvariable, [id, name, code])
+
+        if (result.length > 0) {
+            return res.status(201).json({
+                message: "arun submitted successfully",
+                data: result[0], // or i
+            });
+        }
+    }
+    catch (error) {
+        return res.status(500).json({
+            message: "internal server erroor"
+        });
+    }
+
+}
+
+export const getgautam = async (req, res) =>{
+    try {
+const vishal = `SELECT * FROM  dealership`;
+const [result] =  await pool.query(vishal);
+
+
+
+return res.status(201).json({
+     message: "data aigyo",
+data: result,
+
+})
+        
+    } catch (error) {
+        return res.status(500).json({
+            message: "internal server erroor"
+        });
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 // UPDATE INVENTORY
 export const updateDealership = async (req, res) => {
     const { id } = req.params;
@@ -39,7 +93,6 @@ export const updateDealership = async (req, res) => {
     }
 };
 
-
 // DELETE INVENTORY
 export const DeleteDealership = async (req, res) => {
     const { id } = req.params;
@@ -51,7 +104,6 @@ export const DeleteDealership = async (req, res) => {
         res.status(500).json({ msg: 'Error deleting dealerships', error });
     }
 };
-
 
 
 // GET ALL USERS 
