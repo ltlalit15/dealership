@@ -5,7 +5,7 @@ import dealershipRoute from "./Routers/dealershipRoute.js"
 import OrderRouter from "./Routers/OrderRouter.js"
 import activityLogRoutes from './Routers/activityRoute.js';
 import agingStockRoutes from './Routers/agingStockRoutes.js';
-import reportRoutes from './Routers/reportRoutes.js';
+//import reportRoutes from './Routers/reportRoutes.js';
 
 
 
@@ -19,7 +19,7 @@ router.use("/api/d1", dealershipRoute);
 router.use("/api/d1", OrderRouter)
 router.use('/api/d1', activityLogRoutes);
 router.use('/api/d1', agingStockRoutes);
-router.use('/api/d1', reportRoutes);
+//router.use('/api/d1', reportRoutes);
 
 
 
