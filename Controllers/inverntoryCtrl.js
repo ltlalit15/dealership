@@ -4,8 +4,7 @@ import { pool } from "../Config/dbConnect.js";
 import { google } from 'googleapis';
 // ✅ Google Auth setup using service account JSON key
 const auth = new google.auth.GoogleAuth({
-  // keyFile: path.join(process.cwd(), 'Controllers/dealership-464311-849c839291c8.json'),
-  keyFile: path.join(process.cwd(), 'Controllers/dealership-464311-93144c7707e1.json'),
+  keyFile: path.join(process.cwd(), 'dealership-464311-849c839291c8.json'),
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 export const syncInventory = async () => {
