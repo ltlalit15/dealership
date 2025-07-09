@@ -2,11 +2,20 @@ import xlsx from 'xlsx';
 import path from 'path';
 import { pool } from "../Config/dbConnect.js";
 import { google } from 'googleapis';
+import { readFile } from 'fs/promises';
+import dotenv from 'dotenv';
+dotenv.config();
+
 // ✅ Google Auth setup using service account JSON key
+const serviceAccountJson = JSON.parse(
+  Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString('utf-8')
+);
+
 const auth = new google.auth.GoogleAuth({
-  keyFile: path.join(process.cwd(), 'dealership-464311-849c839291c8.json'),
+  credentials: serviceAccountJson,
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
+
 export const syncInventory = async () => {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
@@ -97,93 +106,9 @@ await pool.query(`
   }
   console.log('✅ Inventory synced and replaced from Google Sheet.');
 };
-// ✅ Sync inventory data from Google Sheet
-// export const syncInventory = async () => {
-//   const client = await auth.getClient();
-//   const sheets = google.sheets({ version: 'v4', auth: client });
-//   const res = await sheets.spreadsheets.values.get({
-//     spreadsheetId: '1lJvsemtVUkpRUmwd7MCvnHshNZqaz6Dem0myA3ylvPw', // ✅ your actual Sheet ID
-//     range: 'Sheet1!A2:AD', // Adjust if needed
-//   });
-//   const rows = res.data.values;
-//   if (!rows || rows.length === 0) {
-//     console.log('❗ No data found in Google Sheet.');
-//     return;
-//   }
-//     await pool.query('TRUNCATE TABLE inventory');
-// //   const mysqlQuery = `INSERT INTO inventory (SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,\`KEY\`,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-//   for (const row of rows) {
-//     await pool.query(`
-//       INSERT INTO inventory 
-//       (id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,\`KEY\`,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-//    [
-//   row[0] || '',  row[1] || '',  row[2] || '',  row[3] || '',  row[4] || '',
-//   row[5] || '',  row[6] || '',  row[7] || '',  row[8] || '',  row[9] || '',
-//   row[10] || '', row[11] || '', row[12] || '', row[13] || '', row[14] || '',
-//   row[15] || '', row[16] || '', row[17] || '', row[18] || '', row[19] || '',
-//   row[20] || '', row[21] || '', row[22] || '', row[23] || '', row[24] || '',
-//   row[25] || '', row[26] || '', row[27] || '', row[28] || '', row[29] || '',
-//   row[30] || ''
-// ]
-// );
-//   }
-//   console.log('✅ Inventory synced from Google Sheet to MySQL.');
-// };
-// // Multer configuration
-// const storage = multer.diskStorage({
-//     destination: (req, file, cb) => {
-//         cb(null, 'uploads/'); // make sure this folder exists
-//     },
-//     filename: (req, file, cb) => {
-//         cb(null, `${Date.now()}-${file.originalname}`);
-//     }
-// });
-// const upload = multer({
-//     storage,
-//     fileFilter: (req, file, cb) => {
-//         if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.mimetype === 'application/vnd.ms-excel') {
-//             cb(null, true);
-//         } else {
-//             cb(new Error('Only Excel files are allowed'));
-//         }
-//     }
-// });
-// const auth = new google.auth.GoogleAuth({
-//   keyFile: path.join(process.cwd(), 'google-credentials.json'),
-//   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-// });
-// const sheets = google.sheets({ version: 'v4', auth });
-// export const syncInventory = async () => {
-//   const res = await sheets.spreadsheets.values.get({
-//     spreadsheetId: 'your_spreadsheet_id',
-//     range: 'Sheet1!A2:AD'
-//   });
-//   const rows = res.data.values;
-//   for (const row of rows) {
-//     await pool.query(`INSERT INTO inventory (SourceName, STOCK, MANU1) VALUES (?, ?, ?)`, [row[0] || '', row[1] || '', row[2] || '']);
-//   }
-//   console.log('Inventory synced');
-// };
-// import { redisClient } from '../Config/redisClient.js';
-// export const getInventory = async (req, res) => {
-//     const page = parseInt(req.query.page) || 1;
-//     const limit = parseInt(req.query.limit) || 50;
-//     const offset = (page - 1) * limit;
-//     const cacheKey = `inventory_page_${page}_limit_${limit}`;
-//     try {
-//         const cachedData = await redisClient.get(cacheKey);
-//         if (cachedData) {
-//             return res.json(JSON.parse(cachedData));
-//         }
-//         const [inventorys] = await pool.query('SELECT * FROM inventory LIMIT ? OFFSET ?', [limit, offset]);
-//         await redisClient.setEx(cacheKey, 60, JSON.stringify(inventorys)); // cache for 60 seconds
-//         res.json(inventorys);
-//     } catch (error) {
-//         res.status(500).json({ msg: 'Error fetching inventory', error });
-//     }
-// };
 
-// GET ALL USERS 
+
+
 export const getInventory = async (req, res) => {
     try {
         const [inventorys] = await pool.query('SELECT * FROM inventory');

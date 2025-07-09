@@ -1,22 +1,18 @@
-
 import { pool } from "../Config/dbConnect.js";
 
 export const addOrder = async (req, res) => {
   try {
     console.log('Received body:', req.body);
-
     const parseDate = (value) => {
       return value === "" || value === undefined || value === null ? null : value;
     };  
-
     const {
      id, admin_id, user_id, dealership_id,	customer,	dealership,	product,	qty,	status,
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
-        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	
+        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind, 
     } = req.body;
-
     const mysqlQuery = `
       INSERT INTO orders (
         id, admin_id, user_id, dealership_id,	customer,	dealership,	product,	qty,	status,
@@ -29,7 +25,6 @@ export const addOrder = async (req, res) => {
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?
       )
     `;
-
     const values = [
       id, admin_id, user_id, dealership_id,	customer,	dealership,	product,	qty,	status,
   	order_date,	delivery,	total,	source,
@@ -37,18 +32,14 @@ export const addOrder = async (req, res) => {
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
         est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	
     ];
-
-    console.log("Number of placeholders:", mysqlQuery.match(/\?/g).length); // should be 38
-    console.log("Number of values:", values.length);                         // should be 38
-
+    console.log("Number of placeholders:", mysqlQuery.match(/\?/g).length); 
+    console.log("Number of values:", values.length);                        
     const [result] = await pool.query(mysqlQuery, values);
     const [rows] = await pool.query('SELECT * FROM orders WHERE id = ?', [result.insertId]);
-
     return res.status(201).json({
       message: "Order submitted successfully",
       data: rows[0],
     });
-
   } catch (error) {
     return res.status(500).json({
       message: "Internal server error",
@@ -116,7 +107,18 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-// DELETE INVENTORY
+
+
+export const getAllOrder = async (req, res) => {
+  try {
+    const [orders] = await pool.query("SELECT * FROM orders");
+    res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 export const deleteOrder = async (req, res) => {
     const { id } = req.params;
     try {

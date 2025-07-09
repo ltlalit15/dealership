@@ -44,7 +44,7 @@ export const login = async (req, res) => {
 
 // SIGNUP
 export const CreateUser = async (req, res) => {
-  const { email, password, name, role, phone, dealership_id, status  } = req.body;
+  const { email, password, name, role, phone, dealership_id, status, country  } = req.body;
   try {
     const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
@@ -52,7 +52,7 @@ export const CreateUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [result] = await pool.query('INSERT INTO users (email, password, name, role, phone,  dealership_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+    const [result] = await pool.query('INSERT INTO users (email, password, name, role, phone,  dealership_id, status, country) VALUES (?,?, ?, ?, ?, ?, ?, ?)', [
       email,
       hashedPassword,
       name,
@@ -60,6 +60,7 @@ export const CreateUser = async (req, res) => {
       phone,
       dealership_id || null, // or set default null
       status || 1, // set default active (1)
+      country
     ]);
 
     res.status(201).json({ msg: 'User created successfully',
@@ -72,21 +73,23 @@ export const CreateUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { email, name, role, phone, dealership_id, status } = req.body;
+  const { email, name, role, phone, dealership_id, status, country } = req.body;
   try {
     const [existing] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
     if (existing.length === 0) {
       return res.status(404).json({ msg: 'User not found' });
     }
 
-    await pool.query('UPDATE users SET email = ?, name = ?, role = ?, phone = ?, dealership_id = ?, status = ? WHERE id = ?', [
+    await pool.query('UPDATE users SET email = ?, name = ?, role = ?, phone = ?, dealership_id = ?, status = ?, country = ? WHERE id = ?', [
       email,
       name,
       role,
       phone,
       dealership_id || null,
       status || 1,
-      id
+      id,
+      country
+
     ]);
 
     res.status(200).json({ msg: 'User updated successfully' });
@@ -135,7 +138,7 @@ export const logout = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try { 	
 
-    const [users] = await pool.query(`SELECT u.id, u.email, u.name, u.role, u.phone, u.created_at, u.dealership_id, d.name AS dealership_name, u.status
+    const [users] = await pool.query(`SELECT u.id, u.email, u.name, u.role, u.phone, u.created_at, u.dealership_id, d.name AS dealership_name, u.status, u.country
       FROM users u
       LEFT JOIN dealership d ON u.dealership_id = d.id
     `);
@@ -151,7 +154,7 @@ export const getAllUsers = async (req, res) => {
 export const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
-    const [users] = await pool.query('SELECT id, email, name, role, phone FROM users WHERE id = ?', [id]);
+    const [users] = await pool.query('SELECT id, email, name, role, phone, country FROM users WHERE id = ?', [id]);
     if (users.length === 0) return res.status(404).json({ msg: 'User not found' });
     res.json(users[0]);
   } catch (error) {
@@ -163,7 +166,9 @@ export const assigndelership = async (req, res) => {
   const { id } = req.params
   const { dealership_id } = req.body;
   try {
-    const [result] = await pool.query("UPDATE users SET dealership_id = ? WHERE id = ? ", [dealership_id, id]);
+
+
+    const [result] = await pool.query("UPDATE users SET dealership_id = ? ,  dealership_assigned_date = NOW() WHERE id = ? ", [dealership_id, id]);
     if (result.affectedRows == 0) {
       return res.status(400).json({ message: "users not found" });
     }
@@ -179,4 +184,30 @@ export const assigndelership = async (req, res) => {
 
   }
 }
+
+export const getAssignedUsers = async (req, res) => {
+  try {
+    const [users] = await pool.query(`
+      SELECT 
+        id, 
+        name, 
+        email, 
+        role, 
+        dealership_id, 
+        country
+        DATE_FORMAT(dealership_assigned_date, '%Y-%m-%d') as assigned_date 
+      FROM users 
+      WHERE dealership_id IS NOT NULL
+    `);
+
+    res.status(200).json({
+      status: "success",
+      users,
+    });
+  } catch (error) {
+    console.error("❌ Error fetching assigned users:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
