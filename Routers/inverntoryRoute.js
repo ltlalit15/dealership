@@ -2,14 +2,18 @@ import express from "express";
 import multer from 'multer';
 import { pool } from "../Config/dbConnect.js";
 import { google } from 'googleapis';
-import { addInventory,  getInventory, getInventoryById, DeleteInventory, updateInventory, uploadInventory, syncInventory} from "../Controllers/inverntoryCtrl.js"
-
+import { addInventory,  getInventory, getInventoryById, DeleteInventory, updateInventory, uploadInventory, syncInventory, getInventoryBybycountry, getInventoryBypagination} from "../Controllers/inverntoryCtrl.js"
 const router = express.Router();
 router.post('/inventory', addInventory);
 router.get('/inventory', getInventory);
 router.get('/inventory/:id',getInventoryById );
 router.delete('/inventory/:id',DeleteInventory);
 router.put('/inventory/:id', updateInventory);
+router.get('/inventory-by-country/:COUNTRY', getInventoryBybycountry);
+router.get('/api/inventory/', getInventoryBypagination);
+
+
+// GET /api/inventory?page=2&limit=10
 
 const upload = multer({ dest: 'uploads/' });
 router.post('/upload', upload.single('file'), uploadInventory);
@@ -33,17 +37,14 @@ router.get('/view-synced-data', async (req, res) => {
   }
 });
 
-
-router.get('/inventory-by-country/:COUNTRY', async (req, res) => {
-  const { COUNTRY } = req.params;
-  try {
-    const [rows] = await pool.query('SELECT * FROM inventory WHERE COUNTRY = ?', [COUNTRY]);
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
+// router.get('/inventory-by-country/:COUNTRY', async (req, res) => {
+//   const { COUNTRY } = req.params;
+//   try {
+//     const [rows] = await pool.query('SELECT * FROM inventory WHERE COUNTRY = ?', [COUNTRY]);
+//     res.json(rows);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 
 export default router;

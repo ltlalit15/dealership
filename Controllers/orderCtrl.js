@@ -11,7 +11,7 @@ export const addOrder = async (req, res) => {
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
-        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind, 
+        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind, finance_order_status	
     } = req.body;
     const mysqlQuery = `
       INSERT INTO orders (
@@ -19,10 +19,10 @@ export const addOrder = async (req, res) => {
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
-        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	
+        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	,finance_order_status	
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?,?
       )
     `;
     const values = [
@@ -30,7 +30,7 @@ export const addOrder = async (req, res) => {
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
-        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	
+        est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	,finance_order_status	
     ];
     console.log("Number of placeholders:", mysqlQuery.match(/\?/g).length); 
     console.log("Number of values:", values.length);                        
@@ -48,7 +48,17 @@ export const addOrder = async (req, res) => {
   }
 };
 
-export const updateOrderStatus = async (req, res) => {
+export const RecentOrder = async (req, res) => {
+  try {
+    const [orders] = await pool.query("SELECT * FROM orders ORDER BY created_at DESC LIMIT 5;");
+    res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+export const updateOrderStatusdelershipID = async (req, res) => {
   try {
     const { dealership_id } = req.params; // Order ID from URL
     const { status } = req.body; // New status
@@ -69,6 +79,41 @@ export const updateOrderStatus = async (req, res) => {
     }
 
     const [updatedOrder] = await pool.query(`SELECT * FROM orders WHERE dealership_id = ?`, [dealership_id]);
+
+    return res.status(200).json({
+      message: "Order status updated successfully.",
+      data: updatedOrder[0],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
+
+
+export const updateOrderStatusByID = async (req, res) => {
+  try {
+    const { id } = req.params; // Order ID from URL
+    const { finance_order_status } = req.body; // New status
+
+    if (!id || !finance_order_status	) {
+      return res.status(400).json({
+        message: "Order ID and new finance_order_status	 are required.",
+      });
+    }
+
+    const updateQuery = `UPDATE orders SET finance_order_status	 = ? WHERE id = ?`;
+    const [result] = await pool.query(updateQuery, [finance_order_status	, id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        message: "Order not found or already up-to-date.",
+      });
+    }
+
+    const [updatedOrder] = await pool.query(`SELECT * FROM orders WHERE id = ?`, [id]);
 
     return res.status(200).json({
       message: "Order status updated successfully.",
@@ -119,6 +164,18 @@ export const getAllOrder = async (req, res) => {
   }
 };
 
+
+export const getOrderByCountry = async (req, res) => {
+   const { country } = req.params;
+  try {
+    const [orders] = await pool.query('SELECT * FROM orders WHERE COUNTRY = ?', [country]);
+    res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 export const deleteOrder = async (req, res) => {
     const { id } = req.params;
     try {
@@ -139,7 +196,7 @@ export const updateOrder = async (req, res) => {
       stock_no, manu_no, manu_no2, invoice_no, payment, pay_status, pay_terms,
       vin_no, engine_no, key_no, bl_no, ship_date, brand, ocn_spec, model,
       country, year, ext_color, int_color, tbd3, order_month, prod_est, ship_est,
-      est_arr, shp_dte, arr_est, arr_date, ship_ind
+      est_arr, shp_dte, arr_est, arr_date, ship_ind,finance_order_status	
     } = req.body;
 
     const updateQuery = `
@@ -149,7 +206,7 @@ export const updateOrder = async (req, res) => {
         stock_no = ?, manu_no = ?, manu_no2 = ?, invoice_no = ?, payment = ?, pay_status = ?, pay_terms = ?,
         vin_no = ?, engine_no = ?, key_no = ?, bl_no = ?, ship_date = ?, brand = ?, ocn_spec = ?, model = ?,
         country = ?, year = ?, ext_color = ?, int_color = ?, tbd3 = ?, order_month = ?, prod_est = ?, ship_est = ?,
-        est_arr = ?, shp_dte = ?, arr_est = ?, arr_date = ?, ship_ind = ?
+        est_arr = ?, shp_dte = ?, arr_est = ?, arr_date = ?, ship_ind = ?, finance_order_status	= ?
       WHERE id = ?
     `;
 
@@ -159,7 +216,7 @@ export const updateOrder = async (req, res) => {
       stock_no, manu_no, manu_no2, invoice_no, payment, pay_status, pay_terms,
       vin_no, engine_no, key_no, bl_no, ship_date, brand, ocn_spec, model,
       country, year, ext_color, int_color, tbd3, order_month, prod_est, ship_est,
-      est_arr, shp_dte, arr_est, arr_date, ship_ind,
+      est_arr, shp_dte, arr_est, arr_date, ship_ind, finance_order_status	,
       id // for WHERE condition
     ];
 

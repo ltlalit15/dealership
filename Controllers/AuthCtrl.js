@@ -8,18 +8,14 @@ const upload = multer();
 
 export const login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const [results] = await pool.query("SELECT * FROM users WHERE email = ?", [email]);
     if (results.length === 0) return res.status(401).json({ message: "Invalid email" });
-
     const user = results[0];
-
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: "Incorrect password" });
     }
-
     // Mark user as logged in
     await pool.query("UPDATE users SET is_logged = true WHERE id = ?", [user.id]);
 
@@ -33,7 +29,8 @@ export const login = async (req, res) => {
           name: user.name,
           role: user.role,
           phone: user.phone,
-          is_logged: user.is_logged 
+          is_logged: user.is_logged ,
+          country:user.country
         }
       }
         );
@@ -50,7 +47,6 @@ export const CreateUser = async (req, res) => {
     if (existing.length > 0) {
       return res.status(400).json({ msg: 'Email already exists' });
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const [result] = await pool.query('INSERT INTO users (email, password, name, role, phone,  dealership_id, status, country) VALUES (?,?, ?, ?, ?, ?, ?, ?)', [
       email,
@@ -115,7 +111,6 @@ export const deleteUser = async (req, res) => {
 };
 
 
-
 export const logout = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
@@ -166,8 +161,6 @@ export const assigndelership = async (req, res) => {
   const { id } = req.params
   const { dealership_id } = req.body;
   try {
-
-
     const [result] = await pool.query("UPDATE users SET dealership_id = ? ,  dealership_assigned_date = NOW() WHERE id = ? ", [dealership_id, id]);
     if (result.affectedRows == 0) {
       return res.status(400).json({ message: "users not found" });
@@ -181,7 +174,6 @@ export const assigndelership = async (req, res) => {
   catch (error) {
     console.error(error);
     return res.status(500).json({message: "Internal sever error"})
-
   }
 }
 
@@ -194,12 +186,11 @@ export const getAssignedUsers = async (req, res) => {
         email, 
         role, 
         dealership_id, 
-        country
+        country, 
         DATE_FORMAT(dealership_assigned_date, '%Y-%m-%d') as assigned_date 
       FROM users 
       WHERE dealership_id IS NOT NULL
     `);
-
     res.status(200).json({
       status: "success",
       users,

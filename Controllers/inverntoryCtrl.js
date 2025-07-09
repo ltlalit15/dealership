@@ -343,3 +343,81 @@ export const getInventoryById = async (req, res) => {
         res.status(500).json({ msg: 'Error fetching user', error });
     }
 };
+
+export const getInventoryBybycountry = async (req, res) => {
+  const { COUNTRY } = req.params;
+  try {
+    const [rows] = await pool.query('SELECT * FROM inventory WHERE COUNTRY = ?', [COUNTRY]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// export const getInventoryBypagination = async (req, res) => {
+//     try {
+//         // Get page and limit from query parameters, set defaults if not provided
+//         const page = parseInt(req.query.page) || 1;
+//         const limit = parseInt(req.query.limit) || 10;
+
+//         // Calculate offset
+//         const offset = (page - 1) * limit;
+
+//         // Query to get paginated data
+//         const [inventory] = await pool.query(
+//             'SELECT * FROM inventory LIMIT ? OFFSET ?',
+//             [limit, offset]
+//         );
+
+//         // Get total count of inventory items
+//         const [countResult] = await pool.query('SELECT COUNT(*) AS total FROM inventory');
+//         const total = countResult[0].total;
+//         const totalPages = Math.ceil(total / limit);
+
+//         res.json({
+//             currentPage: page,
+//             totalPages,
+//             totalRecords: total,
+//             data: inventory
+//         });
+
+//     } catch (error) {
+//         console.error('Error fetching inventory:', error);
+//         res.status(500).json({ msg: 'Error fetching inventory', error });
+//     }
+// };
+
+
+export const getInventoryBypagination = async (req, res) => {
+  try {
+    // Step 1: Parse query params with defaults
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100); // Max limit = 100
+    const offset = (page - 1) * limit;
+
+    // Step 2: Optional sort (e.g., by ID descending)
+    const [inventory] = await pool.query(
+      'SELECT * FROM inventory ORDER BY id DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+
+    // Step 3: Get total records
+    const [countResult] = await pool.query('SELECT COUNT(*) AS total FROM inventory');
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limit);
+
+    // Step 4: Return paginated response
+    res.status(200).json({
+      currentPage: page,
+      totalPages,
+      totalRecords: total,
+      data: inventory
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching inventory:', error);
+    res.status(500).json({ message: 'Error fetching inventory', error });
+  }
+};
+
