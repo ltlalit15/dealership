@@ -50,9 +50,29 @@ export const getfinaceDashboard = async (req, res) => {
         const [ordersNo] = await pool.query(
             "SELECT COUNT(*) AS finance_order_status_no FROM orders WHERE finance_order_status = 'No'"
         );
-        const [latestOrders] = await pool.query(
-            "SELECT * FROM orders ORDER BY order_date DESC LIMIT 5"
-        );
+        // const [latestOrders] = await pool.query(
+        //     "SELECT * FROM orders ORDER BY order_date DESC LIMIT 5"
+        // );
+
+
+
+        const [latestOrders] = await pool.query(`
+  SELECT 
+    o.*, 
+    d.name AS dealership_name,
+    COALESCE(u1.name, u2.name) AS customer
+
+  FROM orders o
+  LEFT JOIN dealership d ON o.dealership_id = d.id
+    LEFT JOIN users u1 ON o.user_id = u1.id
+      LEFT JOIN users u2 ON o.admin_id = u2.id
+  ORDER BY o.order_date DESC
+  LIMIT 5
+`);
+
+
+
+
         res.status(200).json({
             success: true,
             data: {
