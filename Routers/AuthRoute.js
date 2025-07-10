@@ -14,11 +14,6 @@ router.delete('/user/:id', deleteUser);
 router.get('/getAssignedUsers', getAssignedUsers);
 
 
-
-
-
-
-
 export default router;
 // routes/auth.routes.js
 

@@ -7,7 +7,7 @@ export const addOrder = async (req, res) => {
       return value === "" || value === undefined || value === null ? null : value;
     };  
     const {
-     id, admin_id, user_id, dealership_id,	customer,	dealership,	product,	qty,	status,
+     id, admin_id, user_id, dealership_id,	product,	qty,	status,
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
@@ -15,18 +15,18 @@ export const addOrder = async (req, res) => {
     } = req.body;
     const mysqlQuery = `
       INSERT INTO orders (
-        id, admin_id, user_id, dealership_id,	customer,	dealership,	product,	qty,	status,
+        id, admin_id, user_id, dealership_id,	product,	qty,	status,
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
         est_arr	,shp_dte,	arr_est,	arr_date,	ship_ind	,finance_order_status	
       ) VALUES (
         ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
-        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ?, ?,?
+        ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?, ? 
       )
     `;
     const values = [
-      id, admin_id, user_id, dealership_id,	customer,	dealership,	product,	qty,	status,
+      id, admin_id, user_id, dealership_id,	product,	qty,	status,
   	order_date,	delivery,	total,	source,
     	stock_no,	manu_no,	manu_no2,	invoice_no,	payment,pay_status,	pay_terms	,vin_no	,engine_no	,key_no,
       	bl_no,	ship_date,	brand,	ocn_spec,	model,	country,	year,	ext_color,	int_color,	tbd3,	order_month,	prod_est,	ship_est,	
@@ -153,16 +153,49 @@ export const getOrderById = async (req, res) => {
 };
 
 
+// export const getAllOrder = async (req, res) => {
+//   try {
+//     const [orders] = await pool.query(`
+//       SELECT 
+//         o.*, 
+//         d.name 
+//       FROM orders o
+//       LEFT JOIN dealership d ON o.dealership_id = d.id
+//     `);
+
+//     res.status(200).json({ success: true, data: orders });
+//   } catch (error) {
+//     console.error("Error fetching orders:", error);
+//     res.status(500).json({ success: false, message: "Internal Server Error" });
+//   }
+// };
+
+
 
 export const getAllOrder = async (req, res) => {
   try {
-    const [orders] = await pool.query("SELECT * FROM orders");
+    const [orders] = await pool.query(`
+      SELECT 
+        o.*, 
+        d.name AS dealership_name,
+        COALESCE(u1.name, u2.name) AS customer
+      FROM orders o
+      LEFT JOIN dealership d ON o.dealership_id = d.id
+      LEFT JOIN users u1 ON o.user_id = u1.id
+      LEFT JOIN users u2 ON o.admin_id = u2.id
+    `);
+
+    // NO NEED to map again. Query already gives "customer".
     res.status(200).json({ success: true, data: orders });
   } catch (error) {
     console.error("Error fetching orders:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
+
+
+
 
 
 export const getOrderByCountry = async (req, res) => {
@@ -191,7 +224,7 @@ export const updateOrder = async (req, res) => {
   try {
     const { id } = req.params; // ID from URL
     const {
-      admin_id, user_id, dealership_id, customer, dealership, product, qty, status,
+      admin_id, user_id, dealership_id, product, qty, status,
       order_date, delivery, total, source,
       stock_no, manu_no, manu_no2, invoice_no, payment, pay_status, pay_terms,
       vin_no, engine_no, key_no, bl_no, ship_date, brand, ocn_spec, model,
@@ -201,7 +234,7 @@ export const updateOrder = async (req, res) => {
 
     const updateQuery = `
       UPDATE orders SET
-        admin_id = ?, user_id = ?, dealership_id = ?, customer = ?, dealership = ?, product = ?, qty = ?, status = ?,
+        admin_id = ?, user_id = ?, dealership_id = ?, product = ?, qty = ?, status = ?,
         order_date = ?, delivery = ?, total = ?, source = ?,
         stock_no = ?, manu_no = ?, manu_no2 = ?, invoice_no = ?, payment = ?, pay_status = ?, pay_terms = ?,
         vin_no = ?, engine_no = ?, key_no = ?, bl_no = ?, ship_date = ?, brand = ?, ocn_spec = ?, model = ?,
@@ -211,7 +244,7 @@ export const updateOrder = async (req, res) => {
     `;
 
     const values = [
-      admin_id, user_id, dealership_id, customer, dealership, product, qty, status,
+      admin_id, user_id, dealership_id, product, qty, status,
       order_date, delivery, total, source,
       stock_no, manu_no, manu_no2, invoice_no, payment, pay_status, pay_terms,
       vin_no, engine_no, key_no, bl_no, ship_date, brand, ocn_spec, model,
@@ -240,6 +273,8 @@ export const updateOrder = async (req, res) => {
     });
   }
 };
+
+
 
 
 

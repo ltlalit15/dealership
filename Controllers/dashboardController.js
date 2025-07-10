@@ -6,7 +6,9 @@ export const getDashboardSummary = async (req, res) => {
         const [users] = await pool.query("SELECT COUNT(*) AS active_users FROM users WHERE status = 1");
         const [Pendingorders] = await pool.query("SELECT COUNT(*) AS pending_orders FROM orders WHERE status = 'Pending';");
         const [inventory] = await pool.query("SELECT COUNT(*) AS total_inventory FROM inventory");
-        const [recentOrders] = await pool.query("SELECT id, dealership, order_date, status FROM orders  ORDER BY order_date DESC LIMIT 5");
+        // const [recentOrders] = await pool.query("SELECT id, order_date, status FROM orders  ORDER BY order_date DESC LIMIT 5");
+        const [recentOrders] = await pool.query("SELECT o.id, o.order_date, o.status, o.dealership_id, d.name AS dealership_name FROM orders o LEFT JOIN dealership d ON o.dealership_id = d.id ORDER BY o.order_date DESC LIMIT 5");
+
         const [monthlySales] = await pool.query("SELECT MONTH(order_date) AS month, COUNT(*) AS count FROM orders GROUP BY MONTH(order_date)");
         const [recentActivities] = await pool.query("SELECT action_type, action_details, created_at FROM activity_logs ORDER BY created_at DESC LIMIT 5");
         const [orderStatus] = await pool.query("SELECT status, COUNT(*) AS count FROM orders GROUP BY status");

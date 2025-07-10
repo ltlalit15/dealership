@@ -16,6 +16,7 @@ const auth = new google.auth.GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
 });
 
+
 export const syncInventory = async () => {
   const client = await auth.getClient();
   const sheets = google.sheets({ version: 'v4', auth: client });
@@ -36,7 +37,7 @@ export const syncInventory = async () => {
       manu2,         // D
       invoice,       // E
       payment,       // F
-      pmtStatus,     // G
+      pmtStatus,     // G 
       payTerms,      // H
       vin,           // I
       engine,        // J
@@ -64,8 +65,8 @@ export const syncInventory = async () => {
       // convert to yyyy-mm-dd or return NULL
       const parsed = new Date(d);
       return isNaN(parsed) ? null : parsed.toISOString().split('T')[0];
-    }; 
-await pool.query(`
+    };
+    await pool.query(`
   INSERT INTO inventory 
   (SourceName, STOCK, MANU1, MANU2, INVOICE, PAYMENT, PMTSTATUS, PAYTERMS, VIN, ENGINE, \`KEY\`, BL, SHIPDATE, BRAND, OCNSPEC, MODEL, COUNTRY, MYYEAR, EXTCOLOR, INTCOLOR, TBD3, ORDERMONTH, PRODEST, SHIPEST, ESTARR, SHPDTE, ARREST, ARRDATE, SHIPINDICATION) 
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -99,45 +100,132 @@ await pool.query(`
     ARRDATE = VALUES(ARRDATE),
     SHIPINDICATION = VALUES(SHIPINDICATION)
 `, [
-  sourceName, stock, manu1, manu2, invoice, payment, pmtStatus, payTerms, vin, engine, key, bl,  
-  cleanDate(shipDate), brand, ocnSpec, model, country, myYear, extColor, intColor, tbd3, orderMonth,
-  prodEst, shipEst, estArr, cleanDate(shpDte), arrEst, cleanDate(arrDate), shipIndication
-]);
+      sourceName, stock, manu1, manu2, invoice, payment, pmtStatus, payTerms, vin, engine, key, bl,
+      cleanDate(shipDate), brand, ocnSpec, model, country, myYear, extColor, intColor, tbd3, orderMonth,
+      prodEst, shipEst, estArr, cleanDate(shpDte), arrEst, cleanDate(arrDate), shipIndication
+    ]);
   }
   console.log('✅ Inventory synced and replaced from Google Sheet.');
 };
 
+export const getAllCountries = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT DISTINCT COUNTRY FROM inventory
+      WHERE COUNTRY IS NOT NULL AND COUNTRY != ''
+    `);
+    const countryList = rows.map(row => row.COUNTRY);
+    // Return object with "brand" key
+    res.json({ country: countryList });
+  } catch (error) {
+    console.error('Error fetching countries:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+export const getAllBrands = async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT DISTINCT BRAND FROM inventory
+      WHERE BRAND IS NOT NULL AND BRAND != ''
+    `);
+
+    // Extract brand names
+    const brandList = rows.map(row => row.BRAND);
+
+    // Return object with "brand" key
+    res.json({ brand: brandList });
+  } catch (error) {
+    console.error('Error fetching brands:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// export const getAllstatus = async (req, res) => {
+//   try {
+//     const [rows] = await pool.query(`
+//       SELECT DISTINCT SHIPINDICATION FROM inventory
+//       WHERE SHIPINDICATION IS NOT NULL AND SHIPINDICATION != ''
+//     `);
+
+//     // Just return an array of country values
+//     const shipingList = rows.map(row => row.SHIPINDICATION);
+
+//     res.json(shipingList);
+//   } catch (error) {
+//     console.error('Error fetching countries:', error);
+//     res.status(500).json({ message: 'Internal server error' });
+//   }
+// };
+
+
+
+export const getAllDropdownFilters = async (req, res) => {
+  try {
+    const [countriesRows] = await pool.query(`
+      SELECT DISTINCT COUNTRY FROM inventory
+      WHERE COUNTRY IS NOT NULL AND COUNTRY != ''
+    `);
+
+    const [brandsRows] = await pool.query(`
+      SELECT DISTINCT BRAND FROM inventory
+      WHERE BRAND IS NOT NULL AND BRAND != ''
+    `);
+
+    const [statusRows] = await pool.query(`
+      SELECT DISTINCT SHIPINDICATION FROM inventory
+      WHERE SHIPINDICATION IS NOT NULL AND SHIPINDICATION != ''
+    `);
+
+    const response = {
+      countries: countriesRows.map(row => row.COUNTRY),
+      brands: brandsRows.map(row => row.BRAND),
+      statuses: statusRows.map(row => row.SHIPINDICATION),
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error('Error fetching dropdown data:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+
+
+
+
 
 
 export const getInventory = async (req, res) => {
-    try {
-        const [inventorys] = await pool.query('SELECT * FROM inventory');
-        res.json(inventorys);
-    } catch (error) {
-        res.status(500).json({ msg: 'Error fetching users', error });
-    }
+  try {
+    const [inventorys] = await pool.query('SELECT * FROM inventory');
+    res.json(inventorys);
+  } catch (error) {
+    res.status(500).json({ msg: 'Error fetching users', error });
+  }
 };
 
 export const addInventory = async (req, res) => {
-    try {
-        const { id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,KEY,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE, SHIPINDICATION } = req.body;
+  try {
+    const { id, SourceName, STOCK, MANU1, MANU2, INVOICE, PAYMENT, PMTSTATUS, PAYTERMS, VIN, ENGINE, KEY, BL, SHIPDATE, BRAND, OCNSPEC, MODEL, COUNTRY, MYYEAR, EXTCOLOR, INTCOLOR, TBD3, ORDERMONTH, PRODEST, SHIPEST, ESTARR, SHPDTE, ARREST, ARRDATE, SHIPINDICATION } = req.body;
 
-        const mysqlQuery = `INSERT INTO inventory (id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,\`KEY\`,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const mysqlQuery = `INSERT INTO inventory (id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,\`KEY\`,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        const [result] = await pool.query(mysqlQuery, [id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,KEY,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION]);
+    const [result] = await pool.query(mysqlQuery, [id, SourceName, STOCK, MANU1, MANU2, INVOICE, PAYMENT, PMTSTATUS, PAYTERMS, VIN, ENGINE, KEY, BL, SHIPDATE, BRAND, OCNSPEC, MODEL, COUNTRY, MYYEAR, EXTCOLOR, INTCOLOR, TBD3, ORDERMONTH, PRODEST, SHIPEST, ESTARR, SHPDTE, ARREST, ARRDATE, SHIPINDICATION]);
 
-        const [rows] = await pool.query(`SELECT * FROM inventory WHERE id = ?`, [result.insertId]);
+    const [rows] = await pool.query(`SELECT * FROM inventory WHERE id = ?`, [result.insertId]);
 
-        return res.status(201).json({
-            message: "Inventory submitted successfully",
-            data: rows[0],
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal server error",
-            error: error.message,
-        });
-    }
+    return res.status(201).json({
+      message: "Inventory submitted successfully",
+      data: rows[0],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 };
 
 // export const uploadInventory = async (req, res) => {
@@ -200,61 +288,61 @@ export const addInventory = async (req, res) => {
 
 // Controller function
 export const uploadInventory = async (req, res) => {
-    try {
-        if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
-        const filePath = path.join(req.file.destination, req.file.filename);
-        const workbook = xlsx.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = xlsx.utils.sheet_to_json(sheet, {
-            header: [
-                'Source.Name', 'STOCK #', 'MANU#', 'MANU#2', 'INVOICE#', 'PAYMENT', 'PMT STATUS', 'PAY. TERMS',
-                'VIN#', 'ENGINE#', 'KEY#', 'BL#', 'SHIP DATE', 'BRAND', 'OCN SPEC', 'MODEL', 'COUNTRY', 'MY YEAR',
-                'EXT. COLOR', 'INT. COLOR', 'TBD3', 'ORDER MONTH', 'PROD. EST', 'SHIP. EST', 'EST ARR', 'SHP DTE',
-                'ARR EST', 'ARR. DATE', 'SHIP INDICATION'
-            ],
-            range: 1
-        });
-        const insertPromises = data.map(async (row) => {
-            const sql = `INSERT INTO inventory ( id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,\`KEY\`,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-            await pool.query(sql, [
-                null,
-                row['Source.Name'] || '',
-                row['STOCK #'] || '',
-                row['MANU#'] || '',
-                row['MANU#2'] || '',
-                row['INVOICE#'] || '',
-                row['PAYMENT'] || '',
-                row['PMT STATUS'] || '',
-                row['PAY. TERMS'] || '',
-                row['VIN#'] || '',
-                row['ENGINE#'] || '',
-                row['KEY#'] || '',
-                row['BL#'] || '',
-                row['SHIP DATE'] || null,
-                row['BRAND'] || '',
-                row['OCN SPEC'] || '',
-                row['MODEL'] || '',
-                row['COUNTRY'] || '',
-                row['MY YEAR'] || '',
-                row['EXT. COLOR'] || '',
-                row['INT. COLOR'] || '',
-                row['TBD3'] || '',
-                row['ORDER MONTH'] || '',
-                row['PROD. EST'] || '',
-                row['SHIP. EST'] || '',
-                row['EST ARR'] || '',
-                row['SHP DTE'] || null,
-                row['ARR EST'] || '',
-                row['ARR. DATE'] || null,
-                row['SHIP INDICATION'] || '',
-            ]);
-        });
-        await Promise.all(insertPromises);
-        res.status(200).json({ message: 'Inventory uploaded and saved successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error processing inventory', error: error.message });
-    }
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    const filePath = path.join(req.file.destination, req.file.filename);
+    const workbook = xlsx.readFile(filePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const data = xlsx.utils.sheet_to_json(sheet, {
+      header: [
+        'Source.Name', 'STOCK #', 'MANU#', 'MANU#2', 'INVOICE#', 'PAYMENT', 'PMT STATUS', 'PAY. TERMS',
+        'VIN#', 'ENGINE#', 'KEY#', 'BL#', 'SHIP DATE', 'BRAND', 'OCN SPEC', 'MODEL', 'COUNTRY', 'MY YEAR',
+        'EXT. COLOR', 'INT. COLOR', 'TBD3', 'ORDER MONTH', 'PROD. EST', 'SHIP. EST', 'EST ARR', 'SHP DTE',
+        'ARR EST', 'ARR. DATE', 'SHIP INDICATION'
+      ],
+      range: 1
+    });
+    const insertPromises = data.map(async (row) => {
+      const sql = `INSERT INTO inventory ( id,SourceName,STOCK,MANU1,MANU2,INVOICE,PAYMENT,PMTSTATUS,PAYTERMS,VIN,ENGINE,\`KEY\`,BL,SHIPDATE,BRAND,OCNSPEC,MODEL,COUNTRY,MYYEAR,EXTCOLOR,INTCOLOR,TBD3,ORDERMONTH,PRODEST,SHIPEST,ESTARR,SHPDTE,ARREST,ARRDATE,SHIPINDICATION ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      await pool.query(sql, [
+        null,
+        row['Source.Name'] || '',
+        row['STOCK #'] || '',
+        row['MANU#'] || '',
+        row['MANU#2'] || '',
+        row['INVOICE#'] || '',
+        row['PAYMENT'] || '',
+        row['PMT STATUS'] || '',
+        row['PAY. TERMS'] || '',
+        row['VIN#'] || '',
+        row['ENGINE#'] || '',
+        row['KEY#'] || '',
+        row['BL#'] || '',
+        row['SHIP DATE'] || null,
+        row['BRAND'] || '',
+        row['OCN SPEC'] || '',
+        row['MODEL'] || '',
+        row['COUNTRY'] || '',
+        row['MY YEAR'] || '',
+        row['EXT. COLOR'] || '',
+        row['INT. COLOR'] || '',
+        row['TBD3'] || '',
+        row['ORDER MONTH'] || '',
+        row['PROD. EST'] || '',
+        row['SHIP. EST'] || '',
+        row['EST ARR'] || '',
+        row['SHP DTE'] || null,
+        row['ARR EST'] || '',
+        row['ARR. DATE'] || null,
+        row['SHIP INDICATION'] || '',
+      ]);
+    });
+    await Promise.all(insertPromises);
+    res.status(200).json({ message: 'Inventory uploaded and saved successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error processing inventory', error: error.message });
+  }
 };
 // Route setup (add this to your router file)
 // import express from 'express';
@@ -298,50 +386,50 @@ export const uploadInventory = async (req, res) => {
 
 // UPDATE INVENTORY
 export const updateInventory = async (req, res) => {
-    const { id } = req.params;
-    const data = req.body;
-    try {
-        SHIPINDICATION
-        const [result] = await pool.query(
-                `UPDATE inventory SET SourceName=?, STOCK=?, MANU1=?, MANU2=?, INVOICE=?, PAYMENT=?, PMTSTATUS=?, PAYTERMS=?, ` +
-            `VIN=?, ENGINE=?, \`KEY\`=?, BL=?, SHIPDATE=?, BRAND=?, OCNSPEC=?, MODEL=?, COUNTRY=?, MYYEAR=?, EXTCOLOR=?, INTCOLOR=?, ` +
-        `TBD3=?, ORDERMONTH=?, PRODEST=?, SHIPEST=?, ESTARR=?, SHPDTE=?, ARREST=?, ARRDATE=?, SHIPINDICATION=? WHERE id=?`,
-            [
-                data.sourceName, data.STOCK, data.MANU1, data.MANU2, data.INVOICE, data.PAYMENT, data.PMTSTATUS, data.PAYTERMS,
-                data.VIN, data.ENGINE, data.KEY, data.BL, data.SHIPDATE, data.BRAND, data.OCNSPEC, data.MODEL, data.COUNTRY,
-                data.MYYEAR, data.EXTCOLOR, data.INTCOLOR, data.TBD3, data.ORDERMONTH, data.PRODEST, data.SHIPEST, data.ESTARR,
-                data.SHPDTE, data.ARREST, data.ARRDATE, data.SHIPINDICATION, id
-            ]
-        );
-        if (result.affectedRows === 0) return res.status(404).json({ msg: 'Inventory not found' });
-        res.json({ msg: 'Inventory updated' });
-    } catch (error) {
-        res.status(500).json({ msg: 'Error updating inventory', error });
-    }
+  const { id } = req.params;
+  const data = req.body;
+  try {
+    SHIPINDICATION
+    const [result] = await pool.query(
+      `UPDATE inventory SET SourceName=?, STOCK=?, MANU1=?, MANU2=?, INVOICE=?, PAYMENT=?, PMTSTATUS=?, PAYTERMS=?, ` +
+      `VIN=?, ENGINE=?, \`KEY\`=?, BL=?, SHIPDATE=?, BRAND=?, OCNSPEC=?, MODEL=?, COUNTRY=?, MYYEAR=?, EXTCOLOR=?, INTCOLOR=?, ` +
+      `TBD3=?, ORDERMONTH=?, PRODEST=?, SHIPEST=?, ESTARR=?, SHPDTE=?, ARREST=?, ARRDATE=?, SHIPINDICATION=? WHERE id=?`,
+      [
+        data.sourceName, data.STOCK, data.MANU1, data.MANU2, data.INVOICE, data.PAYMENT, data.PMTSTATUS, data.PAYTERMS,
+        data.VIN, data.ENGINE, data.KEY, data.BL, data.SHIPDATE, data.BRAND, data.OCNSPEC, data.MODEL, data.COUNTRY,
+        data.MYYEAR, data.EXTCOLOR, data.INTCOLOR, data.TBD3, data.ORDERMONTH, data.PRODEST, data.SHIPEST, data.ESTARR,
+        data.SHPDTE, data.ARREST, data.ARRDATE, data.SHIPINDICATION, id
+      ]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ msg: 'Inventory not found' });
+    res.json({ msg: 'Inventory updated' });
+  } catch (error) {
+    res.status(500).json({ msg: 'Error updating inventory', error });
+  }
 };
 
 // DELETE INVENTORY
 export const DeleteInventory = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const [result] = await pool.query('DELETE FROM inventory WHERE id = ?', [id]);
-        if (result.affectedRows === 0) return res.status(404).json({ msg: 'Inventory not found' });
-        res.json({ msg: 'Inventory deleted' });
-    } catch (error) {
-        res.status(500).json({ msg: 'Error deleting inventory', error });
-    }
+  const { id } = req.params;
+  try {
+    const [result] = await pool.query('DELETE FROM inventory WHERE id = ?', [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ msg: 'Inventory not found' });
+    res.json({ msg: 'Inventory deleted' });
+  } catch (error) {
+    res.status(500).json({ msg: 'Error deleting inventory', error });
+  }
 };
 
 // GET USER BY ID 
 export const getInventoryById = async (req, res) => {
-    const { id } = req.params;
-    try {
-        const [inventorys] = await pool.query('SELECT * FROM inventory WHERE id = ?', [id]);
-        if (inventorys.length === 0) return res.status(404).json({ msg: 'inventorys not found' });
-        res.json(inventorys[0]);
-    } catch (error) {
-        res.status(500).json({ msg: 'Error fetching user', error });
-    }
+  const { id } = req.params;
+  try {
+    const [inventorys] = await pool.query('SELECT * FROM inventory WHERE id = ?', [id]);
+    if (inventorys.length === 0) return res.status(404).json({ msg: 'inventorys not found' });
+    res.json(inventorys[0]);
+  } catch (error) {
+    res.status(500).json({ msg: 'Error fetching user', error });
+  }
 };
 
 export const getInventoryBybycountry = async (req, res) => {

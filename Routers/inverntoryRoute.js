@@ -2,7 +2,7 @@ import express from "express";
 import multer from 'multer';
 import { pool } from "../Config/dbConnect.js";
 import { google } from 'googleapis';
-import { addInventory,  getInventory, getInventoryById, DeleteInventory, updateInventory, uploadInventory, syncInventory, getInventoryBybycountry, getInventoryBypagination} from "../Controllers/inverntoryCtrl.js"
+import { addInventory,  getInventory, getInventoryById, DeleteInventory, updateInventory, uploadInventory, syncInventory, getInventoryBybycountry, getInventoryBypagination,getAllDropdownFilters, getAllBrands ,getAllCountries} from "../Controllers/inverntoryCtrl.js"
 const router = express.Router();
 router.post('/inventory', addInventory);
 router.get('/inventory', getInventory);
@@ -11,6 +11,17 @@ router.delete('/inventory/:id',DeleteInventory);
 router.put('/inventory/:id', updateInventory);
 router.get('/inventory-by-country/:COUNTRY', getInventoryBybycountry);
 router.get('/api/inventory/', getInventoryBypagination);
+router.get('/getAllCountries', getAllCountries);
+router.get('/getAllBrands', getAllBrands);
+// router.get('/getAllstatus', getAllstatus);
+router.get('/getAllDropdownFilters', getAllDropdownFilters);
+
+
+
+
+
+
+
 
 
 // GET /api/inventory?page=2&limit=10
