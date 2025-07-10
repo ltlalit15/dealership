@@ -2,11 +2,11 @@ import { JSONCookie } from 'cookie-parser';
 import { query } from 'express';
 import mysql from 'mysql2/promise';
 export const pool = mysql.createPool({
-  host: "yamanote.proxy.rlwy.net",             // ✅ Railway DB host
-  port: 31990,                                  // ✅ Railway DB port
-  user: "root",                                 // ✅ DB username
-  password: "FHFAEMcELdrZfmWadQcKMBrqFkmsEAUf", // ✅ Railway DB password
-  database: "railway",                          // ✅ DB name
+  host: "shuttle.proxy.rlwy.net",             // ✅ Updated host
+  port: 26669,                                 // ✅ Updated port
+  user: "root",                                // ✅ Username
+  password: "yLDcGETiVjudnqmuKkZnhwUlXUaYvUtx", // ✅ Password
+  database: "railway",                         // ✅ DB name
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
